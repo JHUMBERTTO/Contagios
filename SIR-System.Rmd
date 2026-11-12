@@ -52,22 +52,17 @@ library(reshape2)
 library(ggplot2)
 
 
-initial_state_values <- c(S = 999999,  # Número de susceptibles inicial
-                                       # 
-                          I = 1,       # Se inicia con una persona infectada
-                          R = 0)       # 
+initial_state_values <- c(S = 999999,
+                          I = 1,
+                          R = 0)
 
+parameters <- c(beta = 1,
+                gamma = 0.1)
 
-#razones en unidades de días^-1
-parameters <- c(beta = 1,      # razón de infección
-                gamma = 0.1)   # razón de recuperación
-
-#valores de tiempo para resolver la ecuación, de 0 a 60 días
 times <- seq(from = 0, to = 60, by = 1)   
 
 sir_model <- function(time, state, parameters) {  
-    with(as.list(c(state, parameters)), {# R obtendrá los nombres de variables a
-                                         # partir de inputs de estados y parametros
+    with(as.list(c(state, parameters)), {
         N <- S+I+R 
         lambda <- beta * I/N
         dS <- -lambda * S               
@@ -77,7 +72,6 @@ sir_model <- function(time, state, parameters) {
     })
 }
 
-# poner la solución del sistema de ecuaciones en forma de un dataframe
 output <- as.data.frame(ode(y = initial_state_values, 
                             times = times, 
                             func = sir_model,
@@ -135,6 +129,65 @@ b     &=  \frac{1}{70}years^{-1}\\
 \]
 y considerar una duración de 1 año.
 
+Las ecuaciones diferenciales del modelo SIR con población variable son:
+
+\[
+\begin{aligned}
+\frac{dS}{dt}&= -\beta \frac{I}{N} S + bN - \mu S\\
+\frac{dI}{dt}&= \beta\frac{I}{N}S-\gamma I - \mu I\\
+\frac{dR}{dt}&= \gamma I - \mu R
+\end{aligned}
+\]
+
+```{r}
+initial_state_values <- c(S = 999999,
+                          I = 1,
+                          R = 0)
+
+
+parameters <- c(beta = 0.4,            # razón de infección
+                gamma = 0.2,           # razón de recuperación
+                mu = 1/70 / 365,       # razón de mortalidad
+                b = 1/70 / 365)        # razón de natalidad
+                
+#valores de tiempo para resolver la ecuación, de 0 a 360 días
+times <- seq(from = 0, to = 360, by = 1)   
+
+sir_model <- function(time, state, parameters) {  
+    with(as.list(c(state, parameters)), {
+        N <- S+I+R 
+        lambda <- beta * I/N
+        dS <- -lambda * S +b*N - mu*S               
+        dI <- lambda * S - gamma * I - mu*I  
+        dR <- gamma * I - mu*R                 
+        return(list(c(dS, dI, dR))) 
+    })
+}
+
+output <- as.data.frame(ode(y = initial_state_values, 
+                            times = times, 
+                            func = sir_model,
+                            parms = parameters))
+```
+
+
+##  Gráficos de la evolución del sistema
+
+```{r }
+
+output_long <- melt(as.data.frame(output), id = "time")                  
+
+ggplot(data = output_long,                                              
+       aes(x = time, y = value, colour = variable, group = variable)) +  
+  geom_line() +                                                          
+  xlab("Tiempo (días)")+                                                   
+  ylab("Número de individuos") +                                             
+  labs(colour = "Subconjunto") +
+  theme(legend.position = "bottom")
+
+```
+
+
 ## Pregunta 2
 
 Considerando el modelo SIR básico, haga cambios para tomar en cuenta un programa de vacunación. Suponga que una fracción $v$ de susceptibles se vacuna de manera que queda inmune (y entra ahora directamente en el conjunto de los recuperados). Calcule la dinámica de la epidemia en este caso usando los parámetros $\beta=0.4$, $\gamma=0.1$ y considere un periodo de 2 años.
@@ -167,6 +220,64 @@ b     &=  \frac{1}{70}years^{-1}\\
 \]
 y considere una duración de 400 años en sus cálculos.
 
+Las ecuaciones diferenciales del modelo SIR con población variable son:
+
+\[
+\begin{aligned}
+\frac{dS}{dt}&= -\beta \frac{I}{N} S + bN - \mu S\\
+\frac{dI}{dt}&= \beta\frac{I}{N}S-\gamma I - \mu I\\
+\frac{dR}{dt}&= \gamma I - \mu R
+\end{aligned}
+\]
+
+```{r}
+initial_state_values <- c(S = 999999,
+                          I = 1,
+                          R = 0) 
+
+
+#razones en unidades de días^-1
+parameters <- c(beta = 0.4,            # razón de infección
+                gamma = 0.2,           # razón de recuperación
+                mu = 1/70 / 365,       # razón de mortalidad
+                b = 1/70 / 365)        # razón de natalidad
+                
+#valores de tiempo para resolver la ecuación, de 0 a 400 años
+times <- seq(from = 0, to = 360*400, by = 1)   
+
+sir_model <- function(time, state, parameters) {  
+    with(as.list(c(state, parameters)), {
+        N <- S+I+R 
+        lambda <- beta * I/N
+        dS <- -lambda * S +b*N - mu*S               
+        dI <- lambda * S - gamma * I - mu*I  
+        dR <- gamma * I - mu*R                 
+        return(list(c(dS, dI, dR))) 
+    })
+}
+
+output <- as.data.frame(ode(y = initial_state_values, 
+                            times = times, 
+                            func = sir_model,
+                            parms = parameters))
+```
+
+
+##  Gráficos de la evolución del sistema
+
+```{r}
+
+output_long <- melt(as.data.frame(output), id = "time")                  
+
+ggplot(data = output_long,                                              
+       aes(x = time, y = value, colour = variable, group = variable)) +  
+  geom_line() +                                                          
+  xlab("Tiempo (días)")+                                                   
+  ylab("Número de individuos") +                                             
+  labs(colour = "Subconjunto") +
+  theme(legend.position = "bottom")
+
+```
 
 ## Pregunta 4
 
