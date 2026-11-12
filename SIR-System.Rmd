@@ -1,8 +1,10 @@
 ---
-title: "Actividad 1: Modelo SIR"
-author: "E. Crescio, J. Montalvo, E. Uresti"
+title: 'Actividad 2: Modelo SIR'
+author: "Braulio Medina Vázquez - A00844939, Jorge Humberto García Lizarraga - A00846104"
 date: "Noviembre de 2020"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -17,7 +19,7 @@ Este modelo tiene los siguientes supuestos:
 
 * la probabilidades de infectarse son iguales para todos los individuos de la población;
 
-* la población es homogénea, es decir que los riesgos de infectarse son iguales para toos los suceptibles y que los tiempos para recuperarse son iguales para todos los infectados; y
+* la población es homogénea, es decir que los riesgos de infectarse son iguales para todos los suceptibles y que los tiempos para recuperarse son iguales para todos los infectados; y
 
 * el tamaño $N$ de la población es constante.
 
@@ -82,14 +84,6 @@ output <- as.data.frame(ode(y = initial_state_values,
                             parms = parameters))
 ```
 
-```{r}
-max_value = max(output$I)
-
-print(max_value)
-
-print(output$time[output$I == max_value])
-```
-
 
 ##  Gráficos de la evolución del sistema
 
@@ -107,201 +101,80 @@ ggplot(data = output_long,
 
 ```
 
+
+Con el modelo SIR se define la constante 
+\[R_0=\frac{\beta}{\gamma}\]
+que representa el número de personas que cada contagiado infecta. Para que la enfermedad analizada logre dispararse en forma de una epidemia debe cumplirse que $R_0 > 1$. 
+
+También se define 
+\[R_{eff}=R_0\frac{S}{N}\]
+que corresponde al número promedio de personas que cada contagiado infecta. Este segundo valor $R_{eff}$ toma en cuenta de que durante la evolución de la pandemia, al aumentar del número de personas inmunes en la población cada persona contagiada infectará a un número de personas cada vez menor.
+
+
+
 ## Pregunta 1
 
-Analizando el dataframe "output" encuentre el día en que el número de contagios es máximo (el pico de la curva verde). ¿Después de cuántos días del inicio ocurre el máximo? 
-Usando las ecuaciones diferenciales del modelo, encuentre una relación entre los parámetros del modelo válida para el valor de $t$ correspondiente al máximo de la curva de infección.
+Haga cambios en el modelo para tomar en cuenta el hecho de que la población no es constante:
 
-### Respuesta (Jorge Humberto Garcia Lizarraga)
+* agregar un término de incremento en $dS$ para tomar en cuenta los individuos nacidos $+bN$
 
-```{r}
-dia_max <- output$time[which.max(output$I)]
-output[output$time %in% (dia_max - 2):(dia_max + 2), ]
-```
+* agregar un término de decremento en $dS$ para tomar en cuenta las personas susceptibles que mueren -$\mu S$
 
-Del dataframe `output`, el número de infectados alcanza su máximo, $I_{max} \approx 669\,741$, en el **día 18** después del inicio.
+* agregar un término de decremento en $dI$ para tomar en cuenta las personas infectadas que mueren -$\mu I$
 
-Para encontrar la relación entre los parámetros partimos de la ecuación de los infectados:
+* agregar un término de decremento en $dR$ para tomar en cuenta las personas recuperadas que fallecen $-\mu R$
 
-$$
-\frac{dI}{dt} = \beta \frac{I}{N} S - \gamma I
-$$
-
-Factorizando $I$:
-
-$$
-\frac{dI}{dt} = I \left( \beta \frac{S}{N} - \gamma \right)
-$$
-
-En el máximo de la curva de infección ($t = t^*$) la derivada se anula:
-
-$$
-\left. \frac{dI}{dt} \right|_{t = t^*} = 0
-\quad \Longrightarrow \quad
-I(t^*) \left( \beta \frac{S(t^*)}{N} - \gamma \right) = 0
-$$
-
-Como $I(t^*) \neq 0$ (hay infectados en el pico), el término entre paréntesis debe ser cero:
-
-$$
-\beta \frac{S(t^*)}{N} - \gamma = 0
-$$
-
-Por lo tanto, la relación buscada es:
-
-$$
-\boxed{\beta \frac{S(t^*)}{N} = \gamma \quad \Longleftrightarrow \quad \frac{S(t^*)}{N} = \frac{\gamma}{\beta}}
-$$
-
-Es decir, el máximo de infectados ocurre cuando la razón de contagio $\beta \frac{S}{N}$ se iguala a la razón de recuperación $\gamma$. Antes del pico $\beta \frac{S}{N} > \gamma$ y $I$ crece; después del pico $\beta \frac{S}{N} < \gamma$ y $I$ decrece.
-
-**Verificación:** con $\beta = 1$, $\gamma = 0.1$ y $N = 10^6$:
-
-$$
-S(t^*) = \frac{\gamma}{\beta} N = \frac{0.1}{1} \times 10^6 = 100\,000
-$$
-
-En el dataframe, $S(18) \approx 100\,188$, lo cual coincide con la relación obtenida.
+Usar ahora los paámetros
+\[
+\begin{aligned}
+\beta  &=  0.4 days^{-1} &= (0.4 \times 365) years^{-1}\\
+\gamma &=  0.2 days^{-1} &= (0.2 \times 365) years^{-1}\\
+\mu    &=  \frac{1}{70}years^{-1}\\
+b     &=  \frac{1}{70}years^{-1}\\
+\end{aligned}
+\]
+y considerar una duración de 1 año.
 
 ## Pregunta 2
 
-Analizando el dataframe "output" encuentre después de cuántos días el número de "susceptibles" se reduce  a la mitad.  Usando la ecuación diferencial que expresa la variación del número de susceptibles, encuentre de manera analítica una fórmula que exprese el tiempo $t$ necesario para que el número de susceptibles sea la mitad del valor incial en función de $\beta$.
+Considerando el modelo SIR básico, haga cambios para tomar en cuenta un programa de vacunación. Suponga que una fracción $v$ de susceptibles se vacuna de manera que queda inmune (y entra ahora directamente en el conjunto de los recuperados). Calcule la dinámica de la epidemia en este caso usando los parámetros $\beta=0.4$, $\gamma=0.1$ y considere un periodo de 2 años.
+
+Su modelo debe ser capaz de mostrar que si la fracción $v$ es suficiente, no es necesario vacunar a todos los suceptibles para evitar la epidemia. A este efecto se le conoce como *inmunidad de rebaño* y se refiere a que si un sector grande de la población es inmune, entonces los contagios se mantienen a un nivel en el que la enfermedad es eliminada.
+
+¿Cómo se puede calcular la fracción mínima $v$ de personas que se deben vacunar para poder evitar una epidemia? La inmunidad de rebaño ocurre cuando $R_{eff}< 1$. 
 
 
 ## Pregunta 3
 
-Estudie la dinámica del contagio variando los parámetros $\beta$ y $gamma$. Empiece con $gamma=0.1$ constante  cambiando $\beta$ (que representa la 'fuerza' de la infeccion):
+Haga cambios en el modelo para tomar en cuenta de que la población no es constante:
 
-* $\beta=0.1$  365 días
+* agregar un término de incremento en $dS$ para tomar en cuenta los nacidos $+bN$
 
-* $\beta=0.3$  365 días
+* agregar un término de decremento en $dS$ para tomar en cuenta las personas susceptibles que mueren -$\mu S$
 
-* $\beta=0.7$  60 días
+* agregar un término de decremento en $dI$ para tomar en cuenta las personas infectadas que mueren -$\mu I$
 
-* $\beta=0.9$  60 días
+* agregar un término de decremento en $dR$ para tomar en cuenta las personas recuperadas que fallecen $-\mu R$
 
-* $\beta=1.2$  60 días
-
-Comente acerca de los cambios que se observan en las curvas. Encuentre una relación entre $\beta$ y $\gamma$ necesaria para que ocurra la epidemia.  Para que haya una epidemia la fuerza de infección ($\beta$) debe ser suficientemente alta por un tiempo suficientemente largo ($\gamma$ suficientemente bajo) de manera que se pueda transmitir el agente patógeno. A partir de este estudio se puede definir el coeficiente $R_0$ de la infección.
-
-### Respuesta (Jorge Humberto Garcia Lizarraga)
-
-Para cada valor de $\beta$ se resuelve el modelo igual que arriba, solo cambiando los parámetros y los días.
-
-```{r}
-simular <- function(beta, dias) {
-  parameters <- c(beta = beta, gamma = 0.1)
-  times <- seq(from = 0, to = dias, by = 1)
-  output <- as.data.frame(ode(y = initial_state_values,
-                              times = times,
-                              func = sir_model,
-                              parms = parameters))
-
-  # día del máximo de infectados
-  max_value <- max(output$I)
-  print(max_value)
-  print(output$time[output$I == max_value])
-
-  # gráfica
-  output_long <- melt(output, id = "time")
-  ggplot(data = output_long,
-         aes(x = time, y = value, colour = variable, group = variable)) +
-    geom_line() +
-    xlab("Tiempo (días)") +
-    ylab("Número de individuos") +
-    labs(colour = "Subconjunto", title = paste("beta =", beta)) +
-    theme(legend.position = "bottom")
-}
-```
-
-```{r}
-simular(beta = 0.1, dias = 365)
-```
-
-```{r}
-simular(beta = 0.3, dias = 365)
-```
-
-```{r}
-simular(beta = 0.7, dias = 60)
-```
-
-```{r}
-simular(beta = 0.9, dias = 60)
-```
-
-```{r}
-simular(beta = 1.2, dias = 60)
-```
-
-**Comentarios sobre las curvas** (con $\gamma = 0.1$):
-
-* $\beta = 0.1$: no hay epidemia. El número de infectados se queda en 1 y prácticamente toda la población permanece susceptible durante los 365 días.
-* $\beta = 0.3$: sí hay epidemia, pero es lenta. El pico ocurre alrededor del día 73 con unos 300 mil infectados.
-* $\beta = 0.7$: el pico se adelanta al día 26 y sube a unos 578 mil infectados.
-* $\beta = 0.9$: el pico ocurre alrededor del día 20 con unos 645 mil infectados.
-* $\beta = 1.2$: el pico ocurre alrededor del día 15 con unos 709 mil infectados, y casi nadie queda susceptible.
-
-Al aumentar $\beta$, la epidemia ocurre **antes**, el pico es **más alto** y la curva es **más angosta**; además, la cantidad de susceptibles que nunca se contagian es menor.
-
-**Relación entre $\beta$ y $\gamma$ para que ocurra la epidemia.** Partimos de la ecuación de los infectados:
-
-$$
-\frac{dI}{dt} = I \left( \beta \frac{S}{N} - \gamma \right)
-$$
-
-Al inicio casi toda la población es susceptible, $S(0) \approx N$, por lo que:
-
-$$
-\left. \frac{dI}{dt} \right|_{t = 0} \approx I(0) \left( \beta - \gamma \right)
-$$
-
-Para que haya epidemia, el número de infectados debe crecer al inicio, es decir:
-
-$$
-\left. \frac{dI}{dt} \right|_{t = 0} > 0
-\quad \Longrightarrow \quad
-\beta - \gamma > 0
-\quad \Longrightarrow \quad
-\beta > \gamma
-$$
-
-Dividiendo entre $\gamma$ se define el número básico de reproducción:
-
-$$
-\boxed{R_0 = \frac{\beta}{\gamma} > 1}
-$$
-
-$R_0$ es el número promedio de personas que contagia un infectado durante el tiempo que permanece enfermo ($1/\gamma$ días). Si $R_0 > 1$ cada infectado contagia a más de una persona y la infección se propaga; si $R_0 \leq 1$ la infección no crece y desaparece.
-
-Esto coincide con la relación de la Pregunta 1: el pico ocurre cuando $\frac{S(t^*)}{N} = \frac{\gamma}{\beta} = \frac{1}{R_0}$, lo cual solo es posible (con $S \leq N$) si $R_0 > 1$.
-
-En nuestros casos:
-
-$$
-R_0 = \frac{0.1}{0.1} = 1, \quad
-\frac{0.3}{0.1} = 3, \quad
-\frac{0.7}{0.1} = 7, \quad
-\frac{0.9}{0.1} = 9, \quad
-\frac{1.2}{0.1} = 12
-$$
-
-Por eso con $\beta = 0.1$ ($R_0 = 1$) no hay epidemia, y en todos los demás casos ($R_0 > 1$) sí la hay, siendo más rápida e intensa entre mayor es $R_0$.
+Use los parámetros
+\[
+\begin{aligned}
+\beta  &=  0.4 days^{-1} &= (0.4 \times 365) years^{-1}\\
+\gamma &=  0.2 days^{-1} &= (0.2 \times 365) years^{-1}\\
+\mu    &=  \frac{1}{70}years^{-1}\\
+b     &=  \frac{1}{70}years^{-1}\\
+\end{aligned}
+\]
+y considere una duración de 400 años en sus cálculos.
 
 
 ## Pregunta 4
 
-Después, con $\beta=1$ varíe el valor de $\gamma$:
+Considerando el modelo SIR básico, haga cambios para tomar en cuenta un programa de vacunación. Suponga que una fracción $v$ de susceptibles se vacuna de manera que queda inmune (y entra ahora directamente en el conjunto de los recuperados), mientras que la fracción $(1-v)$ sigue siendo susceptible. 
 
-* $\gamma=0.025$ 60 días
+Calcule la dinámica de la epidemia en este caso, estudiando cómo cambia la dinámica variando la fracción $v$. Utilice $\beta=0.6$, $\gamma=0.1$ y considere un periodo de 2 años.
 
-* $\gamma=0.2$ 60 días
+Su modelo debe ser capaz de mostrar que si la fracción $v$ es suficiente, no es necesario vacunar a todos los suceptibles para evitar la epidemia. A este efecto se le conoce como *inmunidad de rebaño* y se refiere a que si un sector grande de la población es inmune, entonces los contagios se mantienen a un nivel en el que la enfermedad es eliminada.
 
-* $\gamma=0.5$ 60 días
-
-* $\gamma=1$ 365 días
-
-Comente acerca de los cambios que se observan en las curvas.
-Encuentre una relación entre $\beta$ y $\gamma$ necesaria para que ocurra la epidemia.  Para que haya una epidemia la fuerza de infección ($\beta$) debe ser suficientemente alta por un tiempo suficientemente largo ($\gamma$ suficientemente bajo) de manera que se pueda transmitir el agente patógeno. A partir de este estudio se puede definir el coeficiente $R_0$ de la infección. 
-
+¿Cómo se puede calcular la fracción mínima $v$ de personas que se deben vacunar para poder evitar una epidemia? La inmunidad de rebaño ocurre cuando $R_{eff}< 1$. 
 
